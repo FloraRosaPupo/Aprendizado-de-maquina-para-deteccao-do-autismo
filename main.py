@@ -1,3 +1,15 @@
+﻿"""
+ ----------------- File: main.py ---------------------+
+|			    DESCRICAO DO ARQUIVO			      |
+|   Diagnóstico de Autismo através de Reconhecimento  |
+|      e Padrões Faciais com Aprendizado de Máquina   |
+|                                                     |
+|   Implementado por Flora Rosa, Sabrina Guimaraes 	  |
+|                     e Grazielle Stefane             |
++-----------------------------------------------------+ 
+"""
+
+
 import numpy as np
 import pandas as pd
 from tensorflow.keras.preprocessing.image import ImageDataGenerator, load_img
