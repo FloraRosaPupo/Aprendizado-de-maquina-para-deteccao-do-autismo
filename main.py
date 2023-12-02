@@ -7,7 +7,7 @@
 |   Implementado por Flora Rosa, Sabrina Guimaraes 	  |
 |                     e Grazielle Stefane             |
 +-----------------------------------------------------+ 
-"""
+""" 
 
 
 import numpy as np
