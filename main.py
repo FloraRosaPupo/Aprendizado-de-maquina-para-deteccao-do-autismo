@@ -8,8 +8,6 @@
 |                     e Grazielle Stefane             |
 +-----------------------------------------------------+ 
 """ 
-
-
 import numpy as np
 import pandas as pd
 from tensorflow.keras.preprocessing.image import ImageDataGenerator, load_img
@@ -21,19 +19,19 @@ from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Dropout, Flatten, Dense, Activation, GlobalMaxPooling2D
 from tensorflow.keras.applications import VGG19
 from tensorflow.keras.optimizers import SGD
-from sklearn.model_selection import train_test_split  # Importe a função
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix, accuracy_score, classification_report
 
 print(os.listdir("input"))
-
 
 filenames = os.listdir("input/AutismDataset/train")
 categories = []
 for filename in filenames:
     category = filename.split('.')[0]
     if category == 'Autistic':
-        categories.append('Autistic')  # Converter para string
+        categories.append('Autistic')
     else:
-        categories.append('Non_Autistic')  # Converter para string
+        categories.append('Non_Autistic')
 
 train_df = pd.DataFrame({
     'filename': filenames,
@@ -46,9 +44,9 @@ categories = []
 for filename in test_filenames:
     category = filename.split('.')[0]
     if category == 'Autistic':
-        categories.append('Autistic')  # Converter para string
+        categories.append('Autistic')
     else:
-        categories.append('Non_Autistic')  # Converter para string
+        categories.append('Non_Autistic')
 
 test_df = pd.DataFrame({
     'filename': test_filenames,
@@ -72,13 +70,9 @@ pre_trained_model = VGG19(input_shape=input_shape, include_top=False, weights="i
 last_layer = pre_trained_model.get_layer('block5_pool')
 last_output = last_layer.output
 
-# Flatten the output layer to 1 dimension
 x = GlobalMaxPooling2D()(last_output)
-# Add a fully connected layer with 512 hidden units and ReLU activation
 x = Dense(512, activation='relu')(x)
-# Add a dropout rate of 0.5
 x = Dropout(0.5)(x)
-# Add a final softmax layer for classification
 x = Dense(2, activation='softmax')(x)
 
 model = Model(pre_trained_model.input, x)
@@ -89,15 +83,13 @@ model.compile(loss='categorical_crossentropy',
 
 model.summary()
 
-# Prepare Test and Train Data
 train_df, validate_df = train_test_split(train_df, test_size=0.1)
-train_df = train_df.reset_index(drop=True)  # Alterado para não incluir índice
-validate_df = validate_df.reset_index(drop=True)  # Alterado para não incluir índice
+train_df = train_df.reset_index(drop=True)
+validate_df = validate_df.reset_index(drop=True)
 
 total_train = train_df.shape[0]
 total_validate = validate_df.shape[0]
 
-# Training Generator
 train_datagen = ImageDataGenerator(
     rotation_range=15,
     rescale=1./255,
@@ -119,7 +111,6 @@ train_generator = train_datagen.flow_from_dataframe(
     batch_size=batch_size
 )
 
-# Validation Generator
 validation_datagen = ImageDataGenerator(rescale=1./255)
 validation_generator = validation_datagen.flow_from_dataframe(
     validate_df,
@@ -131,7 +122,6 @@ validation_generator = validation_datagen.flow_from_dataframe(
     batch_size=batch_size
 )
 
-# Fit Model
 history = model.fit(
     train_generator,
     epochs=epochs,
@@ -140,8 +130,21 @@ history = model.fit(
     validation_steps=total_validate // batch_size
 )
 
-loss, accuracy = model.evaluate(validation_generator, steps=total_validate // batch_size, workers=12)
-print("Test: accuracy = %f  ;  loss = %f " % (accuracy, loss))
+# Avaliação do modelo no conjunto de validação
+y_true = validation_generator.classes
+y_pred = np.argmax(model.predict(validation_generator), axis=1)
 
-# Salve o modelo após o treinamento
+# Matriz de confusão
+conf_matrix = confusion_matrix(y_true, y_pred)
+print("Matriz de Confusão:")
+print(conf_matrix)
+
+# Acurácia
+accuracy = accuracy_score(y_true, y_pred)
+print("Acurácia:", accuracy)
+
+# Report de classificação
+print("Relatório de Classificação:")
+print(classification_report(y_true, y_pred))
+
 model.save('vgg19.h5')
