@@ -122,6 +122,7 @@ validation_generator = validation_datagen.flow_from_dataframe(
     batch_size=batch_size
 )
 
+# Criar a Curva de Perda durante o Treinamento do MLP
 history = model.fit(
     train_generator,
     epochs=epochs,
@@ -147,4 +148,24 @@ print("Acurácia:", accuracy)
 print("Relatório de Classificação:")
 print(classification_report(y_true, y_pred))
 
+# Salvar o modelo após o treinamento
 model.save('vgg19.h5')
+
+# Criar a Curva de Perda durante o Treinamento do MLP
+plt.figure(figsize=(15, 5))
+
+# Plotar a perda de treinamento e validação
+plt.subplot(1, 2, 1)
+plt.plot(history.history['loss'], label='Train Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.legend()
+plt.title('Train and Validation Loss')
+
+# Plotar a acurácia de treinamento e validação
+plt.subplot(1, 2, 2)
+plt.plot(history.history['accuracy'], label='Train Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.legend()
+plt.title('Train and Validation Accuracy')
+
+plt.show()
