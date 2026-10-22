@@ -6,8 +6,8 @@
 |                                                     |
 |   Implementado por Flora Rosa, Sabrina Guimaraes 	  |
 |                     e Grazielle Stefane             |
-+-----------------------------------------------------+ 
-""" 
++-----------------------------------------------------+
+"""
 import numpy as np
 import pandas as pd
 from tensorflow.keras.preprocessing.image import ImageDataGenerator, load_img
@@ -22,6 +22,10 @@ from tensorflow.keras.optimizers import SGD
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, accuracy_score, classification_report
 
+SEED = 42
+random.seed(SEED)
+np.random.seed(SEED)
+keras.utils.set_random_seed(SEED)
 print(os.listdir("input"))
 
 filenames = os.listdir("input/AutismDataset/train")
@@ -83,7 +87,7 @@ model.compile(loss='categorical_crossentropy',
 
 model.summary()
 
-train_df, validate_df = train_test_split(train_df, test_size=0.1)
+train_df, validate_df = train_test_split(train_df, test_size=0.1, random_state=SEED, stratify=train_df["category"])
 train_df = train_df.reset_index(drop=True)
 validate_df = validate_df.reset_index(drop=True)
 
@@ -108,7 +112,8 @@ train_generator = train_datagen.flow_from_dataframe(
     y_col='category',
     class_mode='categorical',
     target_size=(image_size, image_size),
-    batch_size=batch_size
+    batch_size=batch_size,
+    seed=SEED
 )
 
 validation_datagen = ImageDataGenerator(rescale=1./255)
@@ -119,19 +124,19 @@ validation_generator = validation_datagen.flow_from_dataframe(
     y_col='category',
     class_mode='categorical',
     target_size=(image_size, image_size),
-    batch_size=batch_size
+    batch_size=batch_size,
+    shuffle=False
 )
 
 history = model.fit(
     train_generator,
     epochs=epochs,
-    validation_data=validation_generator,
-    steps_per_epoch=total_train // batch_size,
-    validation_steps=total_validate // batch_size
+    validation_data=validation_generator
 )
 
 # Avaliação do modelo no conjunto de validação
 y_true = validation_generator.classes
+validation_generator.reset()
 y_pred = np.argmax(model.predict(validation_generator), axis=1)
 
 # Matriz de confusão
