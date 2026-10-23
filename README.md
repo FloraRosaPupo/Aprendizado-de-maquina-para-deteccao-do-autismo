@@ -20,3 +20,22 @@ Este é um experimento acadêmico, sem validação clínica e sem finalidade dia
 
 ## Licença
 Não há licença de distribuição definida para o código. A licença e os direitos de uso das imagens devem ser verificados separadamente.
+
+
+## Stack e bibliotecas
+
+Python, TensorFlow/Keras, pandas, NumPy, scikit-learn e matplotlib.
+
+
+## Funcionalidades
+
+- Preparação de imagens.
+- treinamento VGG19.
+- relatório de classificação experimental.
+
+
+## Organização e manutenção
+
+`dataset.py` concentra a leitura e validação de rótulos; `main.py` contém a execução de treinamento protegida por entry point. A ordem dos arquivos é estável. Uma arquitetura de telas não se aplica a este experimento científico.
+
+Veja [a revisão de desenvolvimento](docs/REVISAO.md) para decisões, testes e limites, e [o guia de contribuição](CONTRIBUTING.md) para o fluxo de manutenção.

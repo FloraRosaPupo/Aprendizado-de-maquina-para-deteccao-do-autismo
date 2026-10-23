@@ -1,4 +1,4 @@
-﻿"""
+"""
  ----------------- File: main.py ---------------------+
 |			    DESCRICAO DO ARQUIVO			      |
 |   Diagnóstico de Autismo através de Reconhecimento  |
@@ -8,6 +8,8 @@
 |                     e Grazielle Stefane             |
 +-----------------------------------------------------+
 """
+from pathlib import Path
+from dataset import labeled_images
 import numpy as np
 import pandas as pd
 from tensorflow.keras.preprocessing.image import ImageDataGenerator, load_img
@@ -22,134 +24,113 @@ from tensorflow.keras.optimizers import SGD
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, accuracy_score, classification_report
 
-SEED = 42
-random.seed(SEED)
-np.random.seed(SEED)
-keras.utils.set_random_seed(SEED)
-print(os.listdir("input"))
+def main():
+    SEED = 42
+    random.seed(SEED)
+    np.random.seed(SEED)
+    keras.utils.set_random_seed(SEED)
+    dataset_root = Path(__file__).resolve().parent / "input" / "AutismDataset"
+    train_df = pd.DataFrame(labeled_images(dataset_root / "train"), columns=["filename", "category"])
+    test_df = pd.DataFrame(labeled_images(dataset_root / "test"), columns=["filename", "category"])
+    filenames = train_df["filename"].tolist()
+    train_df['category'].value_counts().plot.bar()
 
-filenames = os.listdir("input/AutismDataset/train")
-categories = []
-for filename in filenames:
-    category = filename.split('.')[0]
-    if category == 'Autistic':
-        categories.append('Autistic')
-    else:
-        categories.append('Non_Autistic')
+    sample = random.choice(filenames)
+    image = load_img(str(dataset_root / "train" / sample))
+    plt.imshow(image)
 
-train_df = pd.DataFrame({
-    'filename': filenames,
-    'category': categories
-})
-train_df['category'].value_counts().plot.bar()
+    image_size = 224
+    input_shape = (image_size, image_size, 3)
 
-test_filenames = os.listdir("input/AutismDataset/test")
-categories = []
-for filename in test_filenames:
-    category = filename.split('.')[0]
-    if category == 'Autistic':
-        categories.append('Autistic')
-    else:
-        categories.append('Non_Autistic')
+    # Hyperparameters
+    epochs = 30
+    batch_size = 64
 
-test_df = pd.DataFrame({
-    'filename': test_filenames,
-    'category': categories
-})
-test_df.head()
+    pre_trained_model = VGG19(input_shape=input_shape, include_top=False, weights="imagenet")
 
-sample = random.choice(filenames)
-image = load_img("input/AutismDataset/train/" + sample)
-plt.imshow(image)
+    last_layer = pre_trained_model.get_layer('block5_pool')
+    last_output = last_layer.output
 
-image_size = 224
-input_shape = (image_size, image_size, 3)
+    x = GlobalMaxPooling2D()(last_output)
+    x = Dense(512, activation='relu')(x)
+    x = Dropout(0.5)(x)
+    x = Dense(2, activation='softmax')(x)
 
-# Hyperparameters
-epochs = 30
-batch_size = 64
+    model = Model(pre_trained_model.input, x)
 
-pre_trained_model = VGG19(input_shape=input_shape, include_top=False, weights="imagenet")
+    model.compile(loss='categorical_crossentropy',
+                  optimizer=SGD(learning_rate=1e-3, momentum=0.9),
+                  metrics=['accuracy'])
 
-last_layer = pre_trained_model.get_layer('block5_pool')
-last_output = last_layer.output
+    model.summary()
 
-x = GlobalMaxPooling2D()(last_output)
-x = Dense(512, activation='relu')(x)
-x = Dropout(0.5)(x)
-x = Dense(2, activation='softmax')(x)
+    train_df, validate_df = train_test_split(train_df, test_size=0.1, random_state=SEED, stratify=train_df["category"])
+    train_df = train_df.reset_index(drop=True)
+    validate_df = validate_df.reset_index(drop=True)
 
-model = Model(pre_trained_model.input, x)
+    total_train = train_df.shape[0]
+    total_validate = validate_df.shape[0]
 
-model.compile(loss='categorical_crossentropy',
-              optimizer=SGD(learning_rate=1e-3, momentum=0.9),
-              metrics=['accuracy'])
+    train_datagen = ImageDataGenerator(
+        rotation_range=15,
+        rescale=1./255,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True,
+        fill_mode='nearest',
+        width_shift_range=0.1,
+        height_shift_range=0.1
+    )
 
-model.summary()
+    train_generator = train_datagen.flow_from_dataframe(
+        train_df,
+        str(dataset_root / "train"),
+        x_col='filename',
+        y_col='category',
+        class_mode='categorical',
+        target_size=(image_size, image_size),
+        batch_size=batch_size,
+        seed=SEED
+    )
 
-train_df, validate_df = train_test_split(train_df, test_size=0.1, random_state=SEED, stratify=train_df["category"])
-train_df = train_df.reset_index(drop=True)
-validate_df = validate_df.reset_index(drop=True)
+    validation_datagen = ImageDataGenerator(rescale=1./255)
+    validation_generator = validation_datagen.flow_from_dataframe(
+        validate_df,
+        str(dataset_root / "train"),
+        x_col='filename',
+        y_col='category',
+        class_mode='categorical',
+        target_size=(image_size, image_size),
+        batch_size=batch_size,
+        shuffle=False
+    )
 
-total_train = train_df.shape[0]
-total_validate = validate_df.shape[0]
+    history = model.fit(
+        train_generator,
+        epochs=epochs,
+        validation_data=validation_generator
+    )
 
-train_datagen = ImageDataGenerator(
-    rotation_range=15,
-    rescale=1./255,
-    shear_range=0.2,
-    zoom_range=0.2,
-    horizontal_flip=True,
-    fill_mode='nearest',
-    width_shift_range=0.1,
-    height_shift_range=0.1
-)
+    # Avaliação do modelo no conjunto de validação
+    y_true = validation_generator.classes
+    validation_generator.reset()
+    y_pred = np.argmax(model.predict(validation_generator), axis=1)
 
-train_generator = train_datagen.flow_from_dataframe(
-    train_df,
-    "input/AutismDataset/train",
-    x_col='filename',
-    y_col='category',
-    class_mode='categorical',
-    target_size=(image_size, image_size),
-    batch_size=batch_size,
-    seed=SEED
-)
+    # Matriz de confusão
+    conf_matrix = confusion_matrix(y_true, y_pred)
+    print("Matriz de Confusão:")
+    print(conf_matrix)
 
-validation_datagen = ImageDataGenerator(rescale=1./255)
-validation_generator = validation_datagen.flow_from_dataframe(
-    validate_df,
-    "input/AutismDataset/train",
-    x_col='filename',
-    y_col='category',
-    class_mode='categorical',
-    target_size=(image_size, image_size),
-    batch_size=batch_size,
-    shuffle=False
-)
+    # Acurácia
+    accuracy = accuracy_score(y_true, y_pred)
+    print("Acurácia:", accuracy)
 
-history = model.fit(
-    train_generator,
-    epochs=epochs,
-    validation_data=validation_generator
-)
+    # Report de classificação
+    print("Relatório de Classificação:")
+    print(classification_report(y_true, y_pred))
 
-# Avaliação do modelo no conjunto de validação
-y_true = validation_generator.classes
-validation_generator.reset()
-y_pred = np.argmax(model.predict(validation_generator), axis=1)
+    model.save('vgg19.h5')
 
-# Matriz de confusão
-conf_matrix = confusion_matrix(y_true, y_pred)
-print("Matriz de Confusão:")
-print(conf_matrix)
 
-# Acurácia
-accuracy = accuracy_score(y_true, y_pred)
-print("Acurácia:", accuracy)
-
-# Report de classificação
-print("Relatório de Classificação:")
-print(classification_report(y_true, y_pred))
-
-model.save('vgg19.h5')
+if __name__ == "__main__":
+    main()
