@@ -1,6 +1,28 @@
-# Experimento acadêmico de classificação de imagens
+# Experimento Acadêmico de Classificação de Imagens
 
-Estudo com VGG19/TensorFlow realizado por Flora Rosa, Sabrina Guimarães e Grazielle Stefane. O script treina um classificador usando as classes presentes no conjunto de dados do repositório.
+## Descrição
+
+Experimento de aprendizado de máquina que prepara imagens rotuladas, treina uma rede baseada em VGG19 e calcula métricas de classificação. O nome do repositório reflete o tema do estudo; o código e seus testes não comprovam capacidade de diagnóstico nem utilidade clínica.
+
+## Stack e bibliotecas
+
+Python, TensorFlow/Keras, pandas, NumPy, scikit-learn e matplotlib.
+
+Dependências e versões declaradas: [requirements.txt](requirements.txt).
+
+## Funcionalidades
+
+- Preparação de imagens.
+- Treinamento VGG19.
+- Relatório de classificação experimental.
+
+## Licença
+
+Não há uma licença de distribuição definida para este repositório. Nenhuma licença MIT, Apache ou equivalente é concedida por este README. As atribuições e os direitos dos materiais de terceiros permanecem preservados.
+
+## Validação e limites
+
+Rótulos, ordenação e rejeição de dataset vazio. A CI não treina o modelo e não comprova utilidade clínica nem validade do dataset.
 
 ## Executar
 Use Python 3.11 em ambiente virtual:
@@ -17,22 +39,6 @@ A semente é fixada e a divisão de validação é estratificada. A validação 
 
 ## Limitações
 Este é um experimento acadêmico, sem validação clínica e sem finalidade diagnóstica. As métricas refletem este conjunto de dados, não demonstram capacidade de diagnosticar pessoas. Origem, autorização de uso, representatividade e possíveis duplicações/vazamentos entre partições devem ser documentados antes de reutilizar o conjunto. A avaliação final independente no conjunto de teste ainda precisa ser implementada.
-
-## Licença
-Não há licença de distribuição definida para o código. A licença e os direitos de uso das imagens devem ser verificados separadamente.
-
-
-## Stack e bibliotecas
-
-Python, TensorFlow/Keras, pandas, NumPy, scikit-learn e matplotlib.
-
-
-## Funcionalidades
-
-- Preparação de imagens.
-- treinamento VGG19.
-- relatório de classificação experimental.
-
 
 ## Organização e manutenção
 
